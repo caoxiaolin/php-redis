@@ -1,0 +1,20 @@
+{
+    "name": "caoxiaolin/php-redis",
+    "description": "A class for php to access redis",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": ">=7.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "php-redis\\": "src"
+        }
+    },
+    "authors": [
+        {
+            "name": "caoxiaolin",
+            "email": "xmihu945@qq.com"
+        }
+    ]
+}
