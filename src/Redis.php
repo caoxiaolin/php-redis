@@ -7,7 +7,13 @@ namespace PhpRedis;
 class Redis
 {
     private $_socket;
+    private $_command;
     private $_result;
+
+    public function __construct()
+    {
+        $this->_conn();
+    }
 
     public function __destruct()
     {
@@ -20,28 +26,16 @@ class Redis
      */
     private function _conn()
     {
-        if ($this->$_socket)
-        {
-            return $this->$_socket;
-        }
-        $this->$_socket = fsockopen($address, $port, $errno, $errstr, 30);
-        if (!$this->$_socket) {
+        $this->_socket = fsockopen(Config::$redisConfig['host'], Config::$redisConfig['port'], $errno, $errstr, 30);
+        if (!$this->_socket) {
             echo "$errstr ($errno)\n";
-        }
-        else
-        {
-            return $this->$_socket;
-            $out = "GET a\r\n";
-            fwrite($fp, $out);
-            echo fgets($fp);
-            fclose($fp);
         }
     }
 
     private function _write(string $msg)
     {
         $msg.= "\r\n";
-        $byte = fwrite($this->$_socket, $msg);
+        $byte = fwrite($this->_socket, $msg);
         if ($byte === false)
         {
             throw new Exception("write error");
@@ -56,16 +50,62 @@ class Redis
         }
     }
 
+    private function _exec()
+    {
+        $this->_write($this->_command);
+        $this->_result = $this->_read();
+    }
+
     private function _read()
     {
-        return fgets($this->$_socket);
+        $result = fgets($this->_socket);
+        $type = substr($result, 0, 1);
+        switch($type)
+        {
+            case '+':
+                return true;
+                break;
+            case '-':
+                return false;
+                break;
+            case ':':
+                break;
+            case '$':
+                $len = (int)substr($result, 1, -2);
+                $ret = '';
+                while($len > 0)
+                {
+                    $data= fgets($this->_socket);
+                    $datalen = strlen($data);
+                    if ($datalen > $len)
+                    {
+                        $data = substr($data, 0, $len - $datalen);
+                    }
+                    $len-= strlen($data);
+                    $ret.= $data;
+                }
+                return $ret;
+                break;
+            case '*':
+                break;
+            default:
+                throw new Exception("read error");
+                return false;
+        }
     }
 
     public function get($key)
     {
-        $cmd = 'GET ' . $key;
-        $this->_conn();
-        $this->_write($cmd);
-        return $this->_read();
+        $this->_command = 'GET ' . $key;
+        $this->_exec();
+        return $this->_result;
+    }
+
+    public function set($key, $value)
+    {
+        $this->_command = 'SET ' . $key . ' "' . addslashes($value) . '"';
+        $this->_exec();
+        return $this->_result;
+
     }
 }
