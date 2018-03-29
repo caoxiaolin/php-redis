@@ -6,7 +6,8 @@ class Config
     public static $redisConfig = [
         'host' => 'localhost',
         'port' => 6379,
-        'username' => 'redis',
         'password' => '123456',
+        'ctimeout' => 10,
+        'rwtimeout' => 10,
     ];
 }
