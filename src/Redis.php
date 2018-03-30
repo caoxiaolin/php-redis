@@ -1,8 +1,6 @@
 <?php
 namespace PhpRedis;
 
-use Monolog\Logger;
-
 /**
  * class Redis 
  */
@@ -12,12 +10,13 @@ class Redis
     private $_database;
     private $_command;
     private $_result;
-    private $_log;
 
+    /**
+     * @param $database 
+     */
     public function __construct(int $database = 0)
     {
         $this->_database = $database;
-        $this->_log = new Logger('redis');
         $this->_conn();
     }
 
@@ -27,10 +26,34 @@ class Redis
         @fclose($this->_socket);
     }
 
+    private $_cmds = [
+        'DEL',
+        //'DUMP',
+        'EXISTS',
+        'EXPIRE',
+        'EXPIREAT',
+        'KEYS',
+        //'MIGRATE',
+        'MOVE',
+        //'OBJECT',
+        'PERSIST',
+        'PEXPIRE',
+        'PEXPIREAT',
+        'PTTL',
+        'RANDOMKEY',
+    ];
+
     public function __call(string $command, array $args)
     {
         $command = strtoupper($command);
-        return $this->_exec($command, $args);
+        if ($this->_exec($command, $args))
+        {
+            return $this->_result;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     /**
@@ -40,7 +63,7 @@ class Redis
     {
         $this->_socket = fsockopen(Config::$redisConfig['host'], Config::$redisConfig['port'], $errno, $errstr, 30);
         if (!$this->_socket) {
-            $this->_log->error($errstr . '(' . $errno . ')');
+            throw new \Exception("[" . __METHOD__ . "] ($errno) $errstr");
             return false;
         }
         if (Config::$redisConfig['password'])
@@ -59,12 +82,12 @@ class Redis
         $len = fwrite($this->_socket, $command);
         if ($len === false)
         {
-            $this->_log->error("write redis error");
+            throw new \Exception("[" . __METHOD__ . "] write redis error");
             return false;
         }
         elseif ($len !== mb_strlen($command, '8bit'))
         {
-            $this->_log->error("writed data length error");
+            throw new \Exception("[" . __METHOD__ . "] writed data length error");
             return false;
         }
         else
@@ -84,6 +107,7 @@ class Redis
         $this->_command.= "$" . mb_strlen($command, '8bit') . "\r\n";
         $this->_command.= $command . "\r\n";
         foreach ($args as $arg) {
+            //var_dump($arg);
             $this->_command .= '$' . mb_strlen($arg, '8bit') . "\r\n" . $arg . "\r\n";
         }
         //var_dump($this->_command);
@@ -102,7 +126,7 @@ class Redis
         $result = fgets($this->_socket);
         if ($result === false)
         {
-            $this->_log->error(__METHOD__ . " read redis error");
+            throw new \Exception("[" . __METHOD__ . "] read redis error");
             return false;
         }
         return $result;
@@ -111,42 +135,57 @@ class Redis
     private function _parseResult(string $result)
     {
         //var_dump($result);
-        $type = substr($result, 0, 1);
+        $type = mb_substr($result, 0, 1, '8bit');
         switch($type)
         {
             case '+':
                 return true;
                 break;
             case '-':
-                $this->_log->error(__METHOD__ . $result);
-                throw new Exception("error");
+                throw new \Exception("[" . __METHOD__ . "] redis response: " . $result);
                 return false;
                 break;
             case ':':
+                return (int)mb_substr($result, 1, -2, '8bit');
                 break;
             case '$':
-                $len = (int)substr($result, 1, -2);
-                $ret = '';
-                while($len > 0)
-                {
-                    $data= fgets($this->_socket);
-                    //var_dump($data);
-                    $datalen = strlen($data);
-                    if ($datalen > $len)
-                    {
-                        $data = substr($data, 0, $len - $datalen);
-                    }
-                    $len-= strlen($data);
-                    $ret.= $data;
-                }
-                echo "########### $ret #########\n";
-                return $ret;
+                return $this->_readData(0, (int)mb_substr($result, 1, -2, '8bit'));
                 break;
             case '*':
+                $num = (int)mb_substr($result, 1, -2, '8bit');  //result number
+                $res = [];
+                while ($num > 0)
+                {
+                    $res[] = $this->_readData(1);
+                    $num--;
+                }
+                return $res; 
                 break;
             default:
-                $this->_log->error("read error");
+                throw new \Exception("[" . __METHOD__ . "] redis response: " . $result);
                 return false;
         }
+    }
+
+    private function _readData(int $flag, int $len = 0)
+    {
+        $ret = '';
+        if ($flag && !$len)
+        {
+            $result= fgets($this->_socket);
+            $len = (int)mb_substr($result, 1, -2, '8bit');
+        }
+        while($len > 0)
+        {
+            $data= fgets($this->_socket);
+            $datalen = strlen($data);
+            if ($datalen > $len)
+            {
+                $data = substr($data, 0, $len - $datalen);
+            }
+            $len-= strlen($data);
+            $ret.= $data;
+        }
+        return $ret;
     }
 }
