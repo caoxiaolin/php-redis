@@ -8,7 +8,7 @@ use Monolog\Logger;
 $logger = new Logger('redis');
 try{
     $redis = new Redis(1);
-    $res = $redis->RANDOMKEY();
+    $res = $redis->type('a');
     var_dump($res);
 }
 catch (Exception $e){

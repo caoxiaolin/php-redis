@@ -41,6 +41,13 @@ class Redis
         'PEXPIREAT',
         'PTTL',
         'RANDOMKEY',
+        'RENAME',
+        'RENAMENX',
+        //'RESTORE',
+        'SORT',
+        'TTL',
+        'TYPE',
+        'SCAN',
     ];
 
     public function __call(string $command, array $args)
@@ -139,7 +146,8 @@ class Redis
         switch($type)
         {
             case '+':
-                return true;
+                $msg = mb_substr($result, 1, -2, '8bit');
+                return ($msg === 'OK') ? true : $msg;
                 break;
             case '-':
                 throw new \Exception("[" . __METHOD__ . "] redis response: " . $result);
@@ -169,8 +177,13 @@ class Redis
 
     private function _readData(int $flag, int $len = 0)
     {
+        if (!$flag && $len <= 0)
+        {
+            return $len;
+        }
+
         $ret = '';
-        if ($flag && !$len)
+        if ($flag && $len === 0)
         {
             $result= fgets($this->_socket);
             $len = (int)mb_substr($result, 1, -2, '8bit');
