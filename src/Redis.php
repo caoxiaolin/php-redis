@@ -6,9 +6,24 @@ namespace PhpRedis;
  */
 class Redis
 {
+    /**
+     * Redis socket connection
+     */
     private $_socket;
+
+    /**
+     * database index, default 0, specified with the "SELECT" command
+     */
     private $_database;
+
+    /**
+     * The data writed to redis
+     */
     private $_command;
+
+    /**
+     * The last return result, may be boolean, string, numeric, or list, etc.
+     */
     private $_result;
 
     /**
@@ -47,7 +62,23 @@ class Redis
         'SORT',
         'TTL',
         'TYPE',
-        'SCAN',
+        //'SCAN',
+        'APPEND',
+        'BITCOUNT',
+        'BITOP',
+        'BITFIELD',
+        'DECR',
+        'DECRBY',
+        'GET',
+        'GETBIT',
+        'GETRANGE',
+        'GETSET',
+        'INCR',
+        'INCRBY',
+        'INCRBYFLOAT',
+        'MGET',
+        'MSET',
+        'MSETNX',
     ];
 
     public function __call(string $command, array $args)
@@ -114,18 +145,17 @@ class Redis
         $this->_command.= "$" . mb_strlen($command, '8bit') . "\r\n";
         $this->_command.= $command . "\r\n";
         foreach ($args as $arg) {
-            //var_dump($arg);
             $this->_command .= '$' . mb_strlen($arg, '8bit') . "\r\n" . $arg . "\r\n";
         }
-        //var_dump($this->_command);
         $this->_write($this->_command);
 
         $result = $this->_read();
         if ($result)
         {
             $this->_result = $this->_parseResult($result);
+            return true;
         }
-        return true;
+        return false;
     }
 
     private function _read()
@@ -141,7 +171,6 @@ class Redis
 
     private function _parseResult(string $result)
     {
-        //var_dump($result);
         $type = mb_substr($result, 0, 1, '8bit');
         switch($type)
         {
@@ -175,6 +204,12 @@ class Redis
         }
     }
 
+    /**
+     * read data from socket
+     *
+     * @param   $flag   
+     * @param   $len    
+     */
     private function _readData(int $flag, int $len = 0)
     {
         if (!$flag && $len <= 0)
@@ -191,12 +226,12 @@ class Redis
         while($len > 0)
         {
             $data= fgets($this->_socket);
-            $datalen = strlen($data);
+            $datalen = mb_strlen($data, '8bit');
             if ($datalen > $len)
             {
-                $data = substr($data, 0, $len - $datalen);
+                $data = mb_substr($data, 0, $len - $datalen, '8bit');
             }
-            $len-= strlen($data);
+            $len-= mb_strlen($data, '8bit');
             $ret.= $data;
         }
         return $ret;
