@@ -17,7 +17,7 @@ class Redis
     private $_database;
 
     /**
-     * The data writed to redis
+     * redis command
      */
     private $_command;
 
@@ -79,11 +79,33 @@ class Redis
         'MGET',
         'MSET',
         'MSETNX',
+        'PSETEX',
+        'SET',
+        'SETBIT',
+        'SETEX',
+        'SETNX',
+        'SETRANGE',
+        'STRLEN',
+        'HEXISTS',
+        'HGET',
+        'HGETALL',
+        'HINCRBY',
+        'HINCRBYFLOAT',
+        'HKEYS',
+        'HLEN',
+        'HMGET',
+        'HMSET',
+        'HSET',
+        'HSETNX',
+        'HVALS',
+        //'HSCAN',
+        'HSTRLEN',
     ];
 
     public function __call(string $command, array $args)
     {
         $command = strtoupper($command);
+
         if ($this->_exec($command, $args))
         {
             return $this->_result;
@@ -141,13 +163,15 @@ class Redis
             return false;
         }
 
-        $this->_command = "*" . (count($args) + 1) . "\r\n";
-        $this->_command.= "$" . mb_strlen($command, '8bit') . "\r\n";
-        $this->_command.= $command . "\r\n";
+        $this->_command = $command;
+
+        $command = "*" . (count($args) + 1) . "\r\n";
+        $command.= "$" . mb_strlen($this->_command, '8bit') . "\r\n";
+        $command.= $this->_command . "\r\n";
         foreach ($args as $arg) {
-            $this->_command .= '$' . mb_strlen($arg, '8bit') . "\r\n" . $arg . "\r\n";
+            $command .= '$' . mb_strlen($arg, '8bit') . "\r\n" . $arg . "\r\n";
         }
-        $this->_write($this->_command);
+        $this->_write($command);
 
         $result = $this->_read();
         if ($result)
@@ -196,12 +220,28 @@ class Redis
                     $res[] = $this->_readData(1);
                     $num--;
                 }
+                $res = $this->_buildResult($res);
                 return $res; 
                 break;
             default:
                 throw new \Exception("[" . __METHOD__ . "] redis response: " . $result);
                 return false;
         }
+    }
+
+    private function _buildResult($res)
+    {
+        if ($this->_command === "HGETALL" && is_array($res))
+        {
+            $return = [];
+            $count = count($res);
+            for ($i = 0; $i < $count; $i++)
+            {
+                $return[$res[$i]] = $res[++$i];
+            }
+            return $return;
+        }
+        return $res;
     }
 
     /**
