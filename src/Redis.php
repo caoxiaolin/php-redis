@@ -100,6 +100,19 @@ class Redis
         'HVALS',
         //'HSCAN',
         'HSTRLEN',
+        //'BLPOP',
+        //'BRPOP',
+        //'BRPOPLPUSH',
+        'LINDEX',
+        'LINSERT',
+        'LLEN',
+        'LPOP',
+        'LPUSH',
+        'LPUSHX',
+        'LRANGE',
+        'LREM',
+        'LSET',
+        'LTRIM',
     ];
 
     public function __call(string $command, array $args)
@@ -194,7 +207,7 @@ class Redis
                 return ($msg === 'OK') ? true : $msg;
                 break;
             case '-':
-                throw new \Exception("[" . __METHOD__ . "] redis response: " . $result);
+                throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", redis response: " . $result);
                 return false;
                 break;
             case ':':
@@ -251,11 +264,11 @@ class Redis
         }
         while($len > 0){
             $data= fgets($this->_socket);
-            $datalen = mb_strlen($data, '8bit');
+            $datalen = (int)mb_strlen($data, '8bit');
             if ($datalen > $len){
                 $data = mb_substr($data, 0, $len - $datalen, '8bit');
             }
-            $len-= mb_strlen($data, '8bit');
+            $len-= (int)mb_strlen($data, '8bit');
             $ret.= $data;
         }
         return $ret;
