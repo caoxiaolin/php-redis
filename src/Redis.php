@@ -138,7 +138,7 @@ class Redis
             if ($this->_socket){
                 break;
             }elseif (!$this->_socket && $retries == 0) {
-                throw new \Exception("[" . __METHOD__ . "] ($errno) $errstr");
+                throw new \Exception("[" . __METHOD__ . "] " . $errstr . ", errno : " . $errno);
             }
         }
         if (Config::$redisConfig['password']){
@@ -149,20 +149,26 @@ class Redis
         }
     }
 
+    /**
+     * write data to socket
+     */
     private function _write(string $command):bool
     {
         $len = fwrite($this->_socket, $command);
         if ($len === false){
-            throw new \Exception("[" . __METHOD__ . "] write redis error");
+            throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", write redis error");
             return false;
         }elseif ($len !== mb_strlen($command, '8bit')){
-            throw new \Exception("[" . __METHOD__ . "] writed data length error");
+            throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", writed data length error");
             return false;
         }else{
             return true;
         }
     }
 
+    /**
+     * send command to redis
+     */
     private function _exec(string $command, array $args = []):bool
     {
         if (!$this->_socket){
@@ -187,16 +193,24 @@ class Redis
         return false;
     }
 
+    /**
+     * read data from socket
+     */
     private function _read()
     {
         $result = fgets($this->_socket);
         if ($result === false){
-            throw new \Exception("[" . __METHOD__ . "] read redis error");
+            throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
             return false;
         }
         return $result;
     }
 
+    /**
+     * Analyze the result according to the redis protocol
+     *
+     * @param   $result data returned by socket
+     */
     private function _parseResult(string $result)
     {
         $type = mb_substr($result, 0, 1, '8bit');
@@ -223,16 +237,21 @@ class Redis
                     $res[] = $this->_readData(1);
                     $num--;
                 }
-                $res = $this->_buildResult($res);
+                $res = $this->_formatResult($res);
                 return $res; 
                 break;
             default:
-                throw new \Exception("[" . __METHOD__ . "] redis response: " . $result);
+                throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", redis response: " . $result);
                 return false;
         }
     }
 
-    private function _buildResult($res)
+    /**
+     * Formatting the result for some specific commands
+     *
+     * @param   $res
+     */
+    private function _formatResult($res)
     {
         if ($this->_command === "HGETALL" && is_array($res)){
             $return = [];
