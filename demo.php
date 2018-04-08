@@ -1,7 +1,6 @@
 <?php
 require 'vendor/autoload.php';
 
-use PhpRedis\Config;
 use PhpRedis\Redis;
 use Monolog\Logger;
 

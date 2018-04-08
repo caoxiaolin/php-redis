@@ -106,60 +106,53 @@ class Redis
     {
         $command = strtoupper($command);
 
-        if ($this->_exec($command, $args))
-        {
+        if ($this->_exec($command, $args)){
             return $this->_result;
-        }
-        else
-        {
+        }else{
             return false;
         }
     }
 
     /**
-     *
+     * connect redis server
      */
-    private function _conn():bool
+    private function _conn():void
     {
-        $this->_socket = fsockopen(Config::$redisConfig['host'], Config::$redisConfig['port'], $errno, $errstr, 30);
-        if (!$this->_socket) {
-            throw new \Exception("[" . __METHOD__ . "] ($errno) $errstr");
-            return false;
+        $retries = Config::$redisConfig['retries'];
+        while ($retries > 0) {
+            $retries--;
+            $this->_socket = fsockopen(Config::$redisConfig['host'], Config::$redisConfig['port'], $errno, $errstr, 30);
+            if ($this->_socket){
+                break;
+            }elseif (!$this->_socket && $retries == 0) {
+                throw new \Exception("[" . __METHOD__ . "] ($errno) $errstr");
+            }
         }
-        if (Config::$redisConfig['password'])
-        {
+        if (Config::$redisConfig['password']){
             $this->_exec('AUTH', [Config::$redisConfig['password']]);
         }
-        if ($this->_database)
-        {
+        if ($this->_database){
             $this->_exec('SELECT', [$this->_database]);
         }
-        return true;
     }
 
     private function _write(string $command):bool
     {
         $len = fwrite($this->_socket, $command);
-        if ($len === false)
-        {
+        if ($len === false){
             throw new \Exception("[" . __METHOD__ . "] write redis error");
             return false;
-        }
-        elseif ($len !== mb_strlen($command, '8bit'))
-        {
+        }elseif ($len !== mb_strlen($command, '8bit')){
             throw new \Exception("[" . __METHOD__ . "] writed data length error");
             return false;
-        }
-        else
-        {
+        }else{
             return true;
         }
     }
 
     private function _exec(string $command, array $args = []):bool
     {
-        if (!$this->_socket)
-        {
+        if (!$this->_socket){
             return false;
         }
 
@@ -174,8 +167,7 @@ class Redis
         $this->_write($command);
 
         $result = $this->_read();
-        if ($result)
-        {
+        if ($result){
             $this->_result = $this->_parseResult($result);
             return true;
         }
@@ -185,8 +177,7 @@ class Redis
     private function _read()
     {
         $result = fgets($this->_socket);
-        if ($result === false)
-        {
+        if ($result === false){
             throw new \Exception("[" . __METHOD__ . "] read redis error");
             return false;
         }
@@ -215,8 +206,7 @@ class Redis
             case '*':
                 $num = (int)mb_substr($result, 1, -2, '8bit');  //result number
                 $res = [];
-                while ($num > 0)
-                {
+                while ($num > 0){
                     $res[] = $this->_readData(1);
                     $num--;
                 }
@@ -231,12 +221,10 @@ class Redis
 
     private function _buildResult($res)
     {
-        if ($this->_command === "HGETALL" && is_array($res))
-        {
+        if ($this->_command === "HGETALL" && is_array($res)){
             $return = [];
             $count = count($res);
-            for ($i = 0; $i < $count; $i++)
-            {
+            for ($i = 0; $i < $count; $i++){
                 $return[$res[$i]] = $res[++$i];
             }
             return $return;
@@ -252,23 +240,19 @@ class Redis
      */
     private function _readData(int $flag, int $len = 0)
     {
-        if (!$flag && $len <= 0)
-        {
+        if (!$flag && $len <= 0){
             return $len;
         }
 
         $ret = '';
-        if ($flag && $len === 0)
-        {
+        if ($flag && $len === 0){
             $result= fgets($this->_socket);
             $len = (int)mb_substr($result, 1, -2, '8bit');
         }
-        while($len > 0)
-        {
+        while($len > 0){
             $data= fgets($this->_socket);
             $datalen = mb_strlen($data, '8bit');
-            if ($datalen > $len)
-            {
+            if ($datalen > $len){
                 $data = mb_substr($data, 0, $len - $datalen, '8bit');
             }
             $len-= mb_strlen($data, '8bit');
