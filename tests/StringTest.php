@@ -9,11 +9,11 @@ final class StringTest extends TestCase
     public static function setUpBeforeClass()
     {
         self::$redis = new Redis();
-        self::$redis->flushall();
     }
 
     public function testAppend()
     {
+        self::$redis->flushall();
         self::$redis->set("string1", "string1");
         self::$redis->append("string1", " string2");
         $this->assertEquals("string1 string2", self::$redis->get("string1"));
@@ -24,6 +24,7 @@ final class StringTest extends TestCase
 
     public function testSet()
     {
+        self::$redis->flushall();
         self::$redis->set("string", "test");
         $this->assertEquals("test", self::$redis->get("string"));
 
@@ -33,7 +34,10 @@ final class StringTest extends TestCase
  
     public function testGet()
     {
+        self::$redis->flushall();
+        self::$redis->set("string", "test");
         $this->assertEquals("test", self::$redis->get("string"));
+        self::$redis->set("int", 100);
         $this->assertEquals(100, self::$redis->get("int"));
         $this->assertEquals(-1, self::$redis->get("none"));
     }

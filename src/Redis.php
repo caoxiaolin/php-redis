@@ -12,12 +12,12 @@ class Redis
     private $_socket;
 
     /**
-     * database index, default 0, specified with the "SELECT" command
+     * The database index, default 0, specified with the "SELECT" command
      */
     private $_database;
 
     /**
-     * redis command
+     * The redis command
      */
     private $_command;
 
@@ -25,6 +25,12 @@ class Redis
      * The last return result, may be boolean, string, numeric, or list, etc.
      */
     private $_result;
+
+
+    /**
+     * Callback function
+     */
+    private $_callback;
 
     /**
      * @param $database 
@@ -113,6 +119,31 @@ class Redis
         'LREM',
         'LSET',
         'LTRIM',
+        'RPOP',
+        'RPOPLPUSH',
+        'RPUSH',
+        'RPUSHX',
+        'SADD',
+        'SCARD',
+        'SDIFF',
+        'SDIFFSTORE',
+        'SINTER',
+        'SINTERSTORE',
+        'SISMEMBER',
+        'SMEMBERS',
+        'SMOVE',
+        'SPOP',
+        'SRANDMEMBER',
+        'SREM',
+        'SUNION',
+        'SUNIONSTORE',
+        //'SSCAN',
+        'PSUBSCRIBE',
+        'PUBLISH',
+        //'PUBSUB',
+        //'PUNSUBSCRIBE',
+        //'SUBSCRIBE',
+        'UNSUBSCRIBE',
     ];
 
     public function __call(string $command, array $args)
@@ -177,6 +208,10 @@ class Redis
 
         $this->_command = $command;
 
+        if ($command == 'PSUBSCRIBE'){
+            $this->_callback = array_pop($args);
+        }
+
         $command = "*" . (count($args) + 1) . "\r\n";
         $command.= "$" . mb_strlen($this->_command, '8bit') . "\r\n";
         $command.= $this->_command . "\r\n";
@@ -185,12 +220,8 @@ class Redis
         }
         $this->_write($command);
 
-        $result = $this->_read();
-        if ($result){
-            $this->_result = $this->_parseResult($result);
-            return true;
-        }
-        return false;
+        $this->_result = $this->_read();
+        return true;
     }
 
     /**
@@ -198,43 +229,65 @@ class Redis
      */
     private function _read()
     {
+        //listen & callback
+        if ($this->_command == 'PSUBSCRIBE')
+        {
+            while(!feof($this->_socket))
+            {
+                call_user_func($this->_callback, $this->_parseResult());
+            }
+        }
+        return $this->_parseResult();
+    }
+
+    /**
+     * Analyze the result according to the redis protocol
+     */
+    private function _parseResult()
+    {
         $result = fgets($this->_socket);
         if ($result === false){
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
             return false;
         }
-        return $result;
-    }
 
-    /**
-     * Analyze the result according to the redis protocol
-     *
-     * @param   $result data returned by socket
-     */
-    private function _parseResult(string $result)
-    {
         $type = mb_substr($result, 0, 1, '8bit');
+        $data = mb_substr($result, 1, -2, '8bit');
         switch($type)
         {
             case '+':
-                $msg = mb_substr($result, 1, -2, '8bit');
-                return ($msg === 'OK') ? true : $msg;
+                return ($data === 'OK') ? true : $data;
                 break;
             case '-':
                 throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", redis response: " . $result);
                 return false;
                 break;
             case ':':
-                return (int)mb_substr($result, 1, -2, '8bit');
+                return $data;
                 break;
             case '$':
-                return $this->_readData(0, (int)mb_substr($result, 1, -2, '8bit'));
+                if ($data == "-1"){
+                    return $data;
+                }
+                $res = '';
+                $len = (int)$data + 2;
+                while($len > 0){
+                    $content = fgets($this->_socket);
+                    if ($content){
+                        $len-= (int)mb_strlen($content, '8bit');
+                        $res.= $content;
+                    }else{
+                        throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
+                        return false;
+                    }
+                }
+                return mb_substr($res, 0, -2, '8bit');
                 break;
             case '*':
-                $num = (int)mb_substr($result, 1, -2, '8bit');  //result number
                 $res = [];
+                $num = (int)$data;
                 while ($num > 0){
-                    $res[] = $this->_readData(1);
+                    $res[] = $this->_parseResult();
                     $num--;
                 }
                 $res = $this->_formatResult($res);
@@ -262,34 +315,5 @@ class Redis
             return $return;
         }
         return $res;
-    }
-
-    /**
-     * read data from socket
-     *
-     * @param   $flag   
-     * @param   $len    
-     */
-    private function _readData(int $flag, int $len = 0)
-    {
-        if (!$flag && $len <= 0){
-            return $len;
-        }
-
-        $ret = '';
-        if ($flag && $len === 0){
-            $result= fgets($this->_socket);
-            $len = (int)mb_substr($result, 1, -2, '8bit');
-        }
-        while($len > 0){
-            $data= fgets($this->_socket);
-            $datalen = (int)mb_strlen($data, '8bit');
-            if ($datalen > $len){
-                $data = mb_substr($data, 0, $len - $datalen, '8bit');
-            }
-            $len-= (int)mb_strlen($data, '8bit');
-            $ret.= $data;
-        }
-        return $ret;
     }
 }
