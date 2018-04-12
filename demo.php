@@ -10,19 +10,16 @@ class TestRedis
     public function test()
     {
         $redis = new Redis();
+        $redis->flushall();
         $res = $redis->set("a", 111);
+        $res = $redis->slowlog("get");
         var_dump($res);
     }
 
-    //消息订阅回调
+    /**************  消息订阅回调  **************/
     public function message(){
-        try{
-            $redis = new Redis();
-            $res = $redis->psubscribe("testmsg", "test*",  __NAMESPACE__ .'\TestRedis::callback');
-        }
-        catch (Exception $e){
-            var_dump($e->getMessage());
-        }
+        $redis = new Redis();
+        $res = $redis->psubscribe("testmsg", "test*",  __NAMESPACE__ .'\TestRedis::callback');
     }
     public function callback($arr)
     {
@@ -32,9 +29,40 @@ class TestRedis
         //msg
         var_dump($arr);
     }
+    /********************************************/
+
+    public function transaction()
+    {
+        $redis = new Redis();
+        $redis->flushall();
+        $redis->watch("start");
+        $redis->MULTI();
+        $redis->SET("start", 1);
+        $redis->INCR("id");
+        $redis->INCR("id");
+        $redis->INCR("id");
+        $redis->SET("over", 1);
+        sleep(10);
+        $res = $redis->EXEC();
+        //$res = $redis->DISCARD();
+        var_dump($res);
+        var_dump($redis->get("id"));
+        var_dump($redis->get("over"));
+    }
 }
 
-$obj = new TestRedis();
+try {
+    $obj = new TestRedis();
 
-//订阅消息消费
-$obj->message();
+    //订阅消息消费
+    //$obj->message();
+
+    //事务
+    //$obj->transaction();
+
+    $obj->test();
+
+}catch (Exception $e){
+    var_dump($e->getMessage());
+}
+
