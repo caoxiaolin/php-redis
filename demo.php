@@ -11,8 +11,10 @@ class TestRedis
     {
         $redis = new Redis();
         $redis->flushall();
-        $res = $redis->set("a", 111);
-        $res = $redis->slowlog("get");
+        $res = $redis->set("a", 1);
+        $res = $redis->set("b", 2);
+        $res = $redis->set("c", 3);
+        $res = $redis->scan(0);
         var_dump($res);
     }
 

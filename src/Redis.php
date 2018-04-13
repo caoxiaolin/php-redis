@@ -47,105 +47,6 @@ class Redis
         @fclose($this->_socket);
     }
 
-    private $_cmds = [
-        'DEL',
-        //'DUMP',
-        'EXISTS',
-        'EXPIRE',
-        'EXPIREAT',
-        'KEYS',
-        //'MIGRATE',
-        'MOVE',
-        //'OBJECT',
-        'PERSIST',
-        'PEXPIRE',
-        'PEXPIREAT',
-        'PTTL',
-        'RANDOMKEY',
-        'RENAME',
-        'RENAMENX',
-        //'RESTORE',
-        'SORT',
-        'TTL',
-        'TYPE',
-        //'SCAN',
-        'APPEND',
-        'BITCOUNT',
-        'BITOP',
-        'BITFIELD',
-        'DECR',
-        'DECRBY',
-        'GET',
-        'GETBIT',
-        'GETRANGE',
-        'GETSET',
-        'INCR',
-        'INCRBY',
-        'INCRBYFLOAT',
-        'MGET',
-        'MSET',
-        'MSETNX',
-        'PSETEX',
-        'SET',
-        'SETBIT',
-        'SETEX',
-        'SETNX',
-        'SETRANGE',
-        'STRLEN',
-        'HEXISTS',
-        'HGET',
-        'HGETALL',
-        'HINCRBY',
-        'HINCRBYFLOAT',
-        'HKEYS',
-        'HLEN',
-        'HMGET',
-        'HMSET',
-        'HSET',
-        'HSETNX',
-        'HVALS',
-        //'HSCAN',
-        'HSTRLEN',
-        //'BLPOP',
-        //'BRPOP',
-        //'BRPOPLPUSH',
-        'LINDEX',
-        'LINSERT',
-        'LLEN',
-        'LPOP',
-        'LPUSH',
-        'LPUSHX',
-        'LRANGE',
-        'LREM',
-        'LSET',
-        'LTRIM',
-        'RPOP',
-        'RPOPLPUSH',
-        'RPUSH',
-        'RPUSHX',
-        'SADD',
-        'SCARD',
-        'SDIFF',
-        'SDIFFSTORE',
-        'SINTER',
-        'SINTERSTORE',
-        'SISMEMBER',
-        'SMEMBERS',
-        'SMOVE',
-        'SPOP',
-        'SRANDMEMBER',
-        'SREM',
-        'SUNION',
-        'SUNIONSTORE',
-        //'SSCAN',
-        'PSUBSCRIBE',
-        'PUBLISH',
-        //'PUBSUB',
-        //'PUNSUBSCRIBE',
-        //'SUBSCRIBE',
-        'UNSUBSCRIBE',
-    ];
-
     public function __call(string $command, array $args)
     {
         $command = strtoupper($command);
@@ -162,38 +63,36 @@ class Redis
      */
     private function _conn():void
     {
+        if ($this->_socket)
+        {
+            return;
+        }
+
         $retries = Config::$redisConfig['retries'];
         while ($retries > 0) {
             $retries--;
-            $this->_socket = fsockopen(Config::$redisConfig['host'], Config::$redisConfig['port'], $errno, $errstr, 30);
+            $this->_socket = @fsockopen(
+                Config::$redisConfig['host'],
+                Config::$redisConfig['port'],
+                $errno,
+                $errstr,
+                Config::$redisConfig['ctimeout'] ? Config::$redisConfig['ctimeout'] : ini_get('default_socket_timeout')
+            );
             if ($this->_socket){
                 break;
             }elseif (!$this->_socket && $retries == 0) {
                 throw new \Exception("[" . __METHOD__ . "] " . $errstr . ", errno : " . $errno);
             }
         }
+        if (Config::$redisConfig['rwtimeout'])
+        {
+            stream_set_timeout($this->_socket, Config::$redisConfig['rwtimeout']);
+        }
         if (Config::$redisConfig['password']){
             $this->_exec('AUTH', [Config::$redisConfig['password']]);
         }
         if ($this->_database){
             $this->_exec('SELECT', [$this->_database]);
-        }
-    }
-
-    /**
-     * write data to socket
-     */
-    private function _write(string $command):bool
-    {
-        $len = fwrite($this->_socket, $command);
-        if ($len === false){
-            throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", write redis error");
-            return false;
-        }elseif ($len !== mb_strlen($command, '8bit')){
-            throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", writed data length error");
-            return false;
-        }else{
-            return true;
         }
     }
 
@@ -218,10 +117,28 @@ class Redis
         foreach ($args as $arg) {
             $command .= '$' . mb_strlen($arg, '8bit') . "\r\n" . $arg . "\r\n";
         }
+
         $this->_write($command);
 
         $this->_result = $this->_read();
         return true;
+    }
+
+    /**
+     * write data to socket
+     */
+    private function _write(string $command):bool
+    {
+        $len = fwrite($this->_socket, $command);
+        if ($len === false){
+            throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", write redis error");
+            return false;
+        }elseif ($len !== mb_strlen($command, '8bit')){
+            throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", writed data length error");
+            return false;
+        }else{
+            return true;
+        }
     }
 
     /**
@@ -256,7 +173,7 @@ class Redis
         switch($type)
         {
             case '+':
-                return ($data === 'OK') ? true : $data;
+                return in_array($data, ['OK', 'PONG']) ? true : $data;
                 break;
             case '-':
                 throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", redis response: " . $result);
@@ -281,7 +198,7 @@ class Redis
                         return false;
                     }
                 }
-                return mb_substr($res, 0, -2, '8bit');
+                return mb_substr($res, 0, -2, '8bit'); //remove \r\n
                 break;
             case '*':
                 $res = [];
