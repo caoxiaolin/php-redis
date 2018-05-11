@@ -1,1 +1,7 @@
 language: php
+
+services:
+  - redis-server
+
+scripts:
+  - php demo.php
