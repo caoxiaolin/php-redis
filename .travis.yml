@@ -6,8 +6,5 @@ php:
 services:
   - redis-server
 
-before_install:
-  - phpunit --version
-  
 scripts:
-  - php demo.php
+  - cd tests && sh runTest.sh 
