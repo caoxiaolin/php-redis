@@ -7,7 +7,6 @@ services:
   - redis-server
 
 before_script:
-  - alias phpunit ./vendor/phpunit/phpunit/phpunit --bootstrap ./vendor/autoload.php ./tests/
   - composer install --dev
 
 scripts:
