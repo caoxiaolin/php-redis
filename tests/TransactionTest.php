@@ -1,8 +1,7 @@
 <?php
 use PhpRedis\Redis;
-use PHPUnit\Framework\TestCase;
 
-final class TransactionTest extends TestCase
+final class TransactionTest extends PHPUnit\Framework\TestCase
 {
     protected static $redis;
 

@@ -1,8 +1,7 @@
 <?php
 use PhpRedis\Redis;
-use PHPUnit\Framework\TestCase;
 
-final class KeyTest extends TestCase
+final class KeyTest extends PHPUnit\Framework\TestCase
 {
     protected static $redis;
 

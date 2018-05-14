@@ -1,8 +1,7 @@
 <?php
 use PhpRedis\Redis;
-use PHPUnit\Framework\TestCase;
 
-final class HashTest extends TestCase
+final class HashTest extends PHPUnit\Framework\TestCase
 {
     protected static $redis;
 
@@ -11,7 +10,7 @@ final class HashTest extends TestCase
         self::$redis = new Redis();
     }
     
-    public function test()
+    public function testHmset()
     {
         self::$redis->HMSET("website", "google", "www.google.com", "yahoo", "www.yahoo.com", "baidu", "www.baidu.com");
         $array = [

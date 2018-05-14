@@ -6,8 +6,5 @@ php:
 services:
   - redis-server
 
-before_script:
-  - composer install
-
 scripts:
-  - cd tests && sh runTest.sh 
+  - ./vendor/phpunit/phpunit/phpunit --bootstrap ./vendor/autoload.php ./tests/ 
