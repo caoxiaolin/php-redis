@@ -53,7 +53,7 @@ class Redis
 
         if ($this->_exec($command, $args)) {
             return $this->_result;
-        }else {
+        } else {
             return false;
         }
     }
@@ -80,7 +80,7 @@ class Redis
             );
             if ($this->_socket) {
                 break;
-            }elseif (!$this->_socket && $retries == 0) {
+            } elseif (!$this->_socket && $retries == 0) {
                 throw new \Exception("[" . __METHOD__ . "] " . $errstr . ", errno : " . $errno);
             }
         }
@@ -133,10 +133,10 @@ class Redis
         if ($len === false) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", write redis error");
             return false;
-        }elseif ($len !== mb_strlen($command, '8bit')) {
+        } elseif ($len !== mb_strlen($command, '8bit')) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", writed data length error");
             return false;
-        }else {
+        } else {
             return true;
         }
     }
@@ -193,7 +193,7 @@ class Redis
                     if ($content) {
                         $len -= (int)mb_strlen($content, '8bit');
                         $res .= $content;
-                    }else {
+                    } else {
                         throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
                         return false;
                     }
