@@ -6,5 +6,8 @@ php:
 services:
   - redis-server
 
+before_script:
+  - composer install
+
 scripts:
   - cd tests && sh runTest.sh 

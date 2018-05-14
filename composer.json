@@ -4,8 +4,7 @@
     "license": "MIT",
     "type": "project",
     "require": {
-        "php": ">=7.2.4",
-        "phpunit/phpunit": ">=7.0.3"
+        "php": ">=7.2.4"
     },
     "autoload": {
         "psr-4": {
