@@ -51,9 +51,9 @@ class Redis
     {
         $command = strtoupper($command);
 
-        if ($this->_exec($command, $args)){
+        if ($this->_exec($command, $args)) {
             return $this->_result;
-        }else{
+        }else {
             return false;
         }
     }
@@ -78,7 +78,7 @@ class Redis
                 $errstr,
                 Config::$redisConfig['ctimeout'] ? Config::$redisConfig['ctimeout'] : ini_get('default_socket_timeout')
             );
-            if ($this->_socket){
+            if ($this->_socket) {
                 break;
             }elseif (!$this->_socket && $retries == 0) {
                 throw new \Exception("[" . __METHOD__ . "] " . $errstr . ", errno : " . $errno);
@@ -88,10 +88,10 @@ class Redis
         {
             stream_set_timeout($this->_socket, Config::$redisConfig['rwtimeout']);
         }
-        if (Config::$redisConfig['password']){
+        if (Config::$redisConfig['password']) {
             $this->_exec('AUTH', [Config::$redisConfig['password']]);
         }
-        if ($this->_database){
+        if ($this->_database) {
             $this->_exec('SELECT', [$this->_database]);
         }
     }
@@ -101,19 +101,19 @@ class Redis
      */
     private function _exec(string $command, array $args = []):bool
     {
-        if (!$this->_socket){
+        if (!$this->_socket) {
             return false;
         }
 
         $this->_command = $command;
 
-        if ($command == 'PSUBSCRIBE'){
+        if ($command == 'PSUBSCRIBE') {
             $this->_callback = array_pop($args);
         }
 
         $command = "*" . (count($args) + 1) . "\r\n";
-        $command.= "$" . mb_strlen($this->_command, '8bit') . "\r\n";
-        $command.= $this->_command . "\r\n";
+        $command .= "$" . mb_strlen($this->_command, '8bit') . "\r\n";
+        $command .= $this->_command . "\r\n";
         foreach ($args as $arg) {
             $command .= '$' . mb_strlen($arg, '8bit') . "\r\n" . $arg . "\r\n";
         }
@@ -130,13 +130,13 @@ class Redis
     private function _write(string $command):bool
     {
         $len = fwrite($this->_socket, $command);
-        if ($len === false){
+        if ($len === false) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", write redis error");
             return false;
-        }elseif ($len !== mb_strlen($command, '8bit')){
+        }elseif ($len !== mb_strlen($command, '8bit')) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", writed data length error");
             return false;
-        }else{
+        }else {
             return true;
         }
     }
@@ -149,7 +149,7 @@ class Redis
         //listen & callback
         if ($this->_command == 'PSUBSCRIBE')
         {
-            while(!feof($this->_socket))
+            while (!feof($this->_socket))
             {
                 call_user_func($this->_callback, $this->_parseResult());
             }
@@ -163,14 +163,14 @@ class Redis
     private function _parseResult()
     {
         $result = fgets($this->_socket);
-        if ($result === false){
+        if ($result === false) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
             return false;
         }
 
         $type = mb_substr($result, 0, 1, '8bit');
         $data = mb_substr($result, 1, -2, '8bit');
-        switch($type)
+        switch ($type)
         {
             case '+':
                 return in_array($data, ['OK', 'PONG']) ? true : $data;
@@ -183,17 +183,17 @@ class Redis
                 return $data;
                 break;
             case '$':
-                if ($data == "-1"){
+                if ($data == "-1") {
                     return $data;
                 }
                 $res = '';
                 $len = (int)$data + 2;
-                while($len > 0){
+                while ($len > 0) {
                     $content = fgets($this->_socket);
-                    if ($content){
-                        $len-= (int)mb_strlen($content, '8bit');
-                        $res.= $content;
-                    }else{
+                    if ($content) {
+                        $len -= (int)mb_strlen($content, '8bit');
+                        $res .= $content;
+                    }else {
                         throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
                         return false;
                     }
@@ -203,7 +203,7 @@ class Redis
             case '*':
                 $res = [];
                 $num = (int)$data;
-                while ($num > 0){
+                while ($num > 0) {
                     $res[] = $this->_parseResult();
                     $num--;
                 }
@@ -223,10 +223,10 @@ class Redis
      */
     private function _formatResult($res)
     {
-        if ($this->_command === "HGETALL" && is_array($res)){
+        if ($this->_command === "HGETALL" && is_array($res)) {
             $return = [];
             $count = count($res);
-            for ($i = 0; $i < $count; $i++){
+            for ($i = 0; $i < $count; $i++) {
                 $return[$res[$i]] = $res[++$i];
             }
             return $return;

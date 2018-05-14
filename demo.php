@@ -19,9 +19,9 @@ class TestRedis
     }
 
     /**************  消息订阅回调  **************/
-    public function message(){
+    public function message() {
         $redis = new Redis();
-        $res = $redis->psubscribe("testmsg", "test*",  __NAMESPACE__ .'\TestRedis::callback');
+        $res = $redis->psubscribe("testmsg", "test*",  __NAMESPACE__ . '\TestRedis::callback');
     }
     public function callback($arr)
     {
@@ -64,7 +64,7 @@ try {
 
     $obj->test();
 
-}catch (Exception $e){
+}catch (Exception $e) {
     var_dump($e->getMessage());
 }
 
