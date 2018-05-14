@@ -1,0 +1,15 @@
+checks:
+    php:
+        code_rating: true
+        duplication: true
+filter:
+    excluded_paths:
+        - tests/*
+build:
+    tests:
+        override:
+            -
+                command: ./vendor/bin/phpunit --coverage-clover=coverage-file
+                coverage:
+                    file: coverage-file
+                    format: php-clover
