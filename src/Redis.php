@@ -44,7 +44,7 @@ class Redis
     public function __destruct()
     {
         $this->_exec('QUIT');
-        @fclose($this->_socket);
+        fclose($this->_socket);
     }
 
     public function __call(string $command, array $args)
@@ -76,7 +76,7 @@ class Redis
                 Config::$redisConfig['port'],
                 $errno,
                 $errstr,
-                Config::$redisConfig['ctimeout'] ? Config::$redisConfig['ctimeout'] : ini_get('default_socket_timeout')
+                Config::$redisConfig['ctimeout'] ? Config::$redisConfig['ctimeout'] : floatval(ini_get('default_socket_timeout'))
             );
             if ($this->_socket) {
                 break;
@@ -132,10 +132,8 @@ class Redis
         $len = fwrite($this->_socket, $command);
         if ($len === false) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", write redis error");
-            return false;
         } elseif ($len !== mb_strlen($command, '8bit')) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", writed data length error");
-            return false;
         }else {
             return true;
         }
@@ -165,7 +163,6 @@ class Redis
         $result = fgets($this->_socket);
         if ($result === false) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
-            return false;
         }
 
         $type = mb_substr($result, 0, 1, '8bit');
@@ -177,7 +174,6 @@ class Redis
                 break;
             case '-':
                 throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", redis response: " . $result);
-                return false;
                 break;
             case ':':
                 return $data;
@@ -195,7 +191,6 @@ class Redis
                         $res .= $content;
                     }else {
                         throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
-                        return false;
                     }
                 }
                 return mb_substr($res, 0, -2, '8bit'); //remove \r\n
@@ -212,7 +207,6 @@ class Redis
                 break;
             default:
                 throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", redis response: " . $result);
-                return false;
         }
     }
 
