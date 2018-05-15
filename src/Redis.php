@@ -53,7 +53,7 @@ class Redis
 
         if ($this->_exec($command, $args)) {
             return $this->_result;
-        } else {
+        }else {
             return false;
         }
     }
@@ -136,7 +136,7 @@ class Redis
         } elseif ($len !== mb_strlen($command, '8bit')) {
             throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", writed data length error");
             return false;
-        } else {
+        }else {
             return true;
         }
     }
@@ -193,7 +193,7 @@ class Redis
                     if ($content) {
                         $len -= (int)mb_strlen($content, '8bit');
                         $res .= $content;
-                    } else {
+                    }else {
                         throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", read redis error");
                         return false;
                     }
