@@ -29,7 +29,7 @@ class TestRedis
         //pattern
         //channel
         //msg
-        //var_dump($arr);
+        echo json_encode($arr);
     }
     /********************************************/
 
@@ -45,8 +45,8 @@ class TestRedis
         $redis->INCR("id");
         $redis->SET("over", 1);
         sleep(10);
-        $res = $redis->EXEC();
-        //$res = $redis->DISCARD();
+        $redis->EXEC();
+        //$redis->DISCARD();
         //var_dump($res);
         //var_dump($redis->get("id"));
         //var_dump($redis->get("over"));
