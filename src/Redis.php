@@ -10,6 +10,7 @@ namespace PhpRedis;
  * @method mixed psubscribe(...$pattern, $callback)
  * @method mixed watch($key)
  * @method mixed multi()
+ * @method mixed exec()
  * @method mixed incr($key)
  * @method mixed get($key)
  */
