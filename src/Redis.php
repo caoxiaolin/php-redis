@@ -181,13 +181,10 @@ class Redis
         {
             case '+':
                 return in_array($data, ['OK', 'PONG']) ? true : $data;
-                break;
             case '-':
                 throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", redis response: " . $result);
-                break;
             case ':':
                 return $data;
-                break;
             case '$':
                 if ($data == "-1") {
                     return $data;
@@ -204,7 +201,6 @@ class Redis
                     }
                 }
                 return mb_substr($res, 0, -2, '8bit'); //remove \r\n
-                break;
             case '*':
                 $res = [];
                 $num = (int)$data;
@@ -214,7 +210,6 @@ class Redis
                 }
                 $res = $this->_formatResult($res);
                 return $res; 
-                break;
             default:
                 throw new \Exception("[" . __METHOD__ . "] command : " . $this->_command . ", redis response: " . $result);
         }

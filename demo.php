@@ -11,17 +11,17 @@ class TestRedis
     {
         $redis = new Redis();
         $redis->flushall();
-        $res = $redis->set("a", 1);
-        $res = $redis->set("b", 2);
-        $res = $redis->set("c", 3);
+        $redis->set("a", 1);
+        $redis->set("b", 2);
+        $redis->set("c", 3);
         $res = $redis->scan(0);
-        //var_dump($res);
+        echo json_encode($res);
     }
 
     /**************  消息订阅回调  **************/
     public function message() {
         $redis = new Redis();
-        $res = $redis->psubscribe("testmsg", "test*", __NAMESPACE__ . '\TestRedis::callback');
+        $redis->psubscribe("testmsg", "test*", __NAMESPACE__ . '\TestRedis::callback');
     }
     public function callback($arr)
     {
@@ -47,7 +47,6 @@ class TestRedis
         sleep(10);
         $redis->EXEC();
         //$redis->DISCARD();
-        //var_dump($res);
         //var_dump($redis->get("id"));
         //var_dump($redis->get("over"));
     }
