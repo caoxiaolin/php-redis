@@ -15,7 +15,7 @@ class TestRedis
         $res = $redis->set("b", 2);
         $res = $redis->set("c", 3);
         $res = $redis->scan(0);
-        var_dump($res);
+        //var_dump($res);
     }
 
     /**************  消息订阅回调  **************/
@@ -29,7 +29,7 @@ class TestRedis
         //pattern
         //channel
         //msg
-        var_dump($arr);
+        //var_dump($arr);
     }
     /********************************************/
 
@@ -47,9 +47,9 @@ class TestRedis
         sleep(10);
         $res = $redis->EXEC();
         //$res = $redis->DISCARD();
-        var_dump($res);
-        var_dump($redis->get("id"));
-        var_dump($redis->get("over"));
+        //var_dump($res);
+        //var_dump($redis->get("id"));
+        //var_dump($redis->get("over"));
     }
 }
 
@@ -65,6 +65,6 @@ try {
     $obj->test();
 
 }catch (\Exception $e) {
-    var_dump($e->getMessage());
+    //var_dump($e->getMessage());
 }
 

@@ -3,6 +3,15 @@ namespace PhpRedis;
 
 /**
  * class Redis 
+ *
+ * @method mixed set($key, $value) Set a value to a key
+ * @method mixed flushall() clear redis data
+ * @method mixed scan($cursor)
+ * @method mixed psubscribe(...$pattern, $callback)
+ * @method mixed watch($key)
+ * @method mixed multi()
+ * @method mixed incr($key)
+ * @method mixed get($key)
  */
 class Redis
 {
