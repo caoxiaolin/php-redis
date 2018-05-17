@@ -8,7 +8,7 @@ filter:
 build:
     dependencies:
         before:
-            - command: composer install --dev
+            - composer install --dev
     tests:
         override:
             -
