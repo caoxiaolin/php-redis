@@ -6,6 +6,9 @@ filter:
     excluded_paths:
         - tests/*
 build:
+    dependencies:
+        before:
+            - command: composer install --dev
     tests:
         override:
             -
