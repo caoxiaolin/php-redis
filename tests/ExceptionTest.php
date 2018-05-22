@@ -22,7 +22,7 @@ final class ExceptionTest extends PHPUnit\Framework\TestCase
         Config::$redisConfig['port'] = 1234;
         try {
             self::$redis = new Redis();
-            $this->fail('No Exception has been raised.');
+            $this->fail('No exception was thrown.');
         } catch (Exception $e) {
             throw $e;
         }
@@ -37,7 +37,7 @@ final class ExceptionTest extends PHPUnit\Framework\TestCase
         Config::$redisConfig['password'] = 123456;
         try {
             self::$redis = new Redis();
-            $this->fail('No Exception has been raised.');
+            $this->fail('No exception was thrown.');
         } catch (Exception $e) {
             throw $e;
         }
@@ -52,6 +52,7 @@ final class ExceptionTest extends PHPUnit\Framework\TestCase
         try {
             self::$redis = new Redis();
             self::$redis->errcommand();
+            $this->fail('No exception was thrown.');
         } catch (Exception $e)
         {
             throw $e;
