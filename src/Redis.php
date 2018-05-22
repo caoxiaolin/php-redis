@@ -91,7 +91,7 @@ class Redis
             if ($this->_socket) {
                 break;
             } elseif (!$this->_socket && $retries == 0) {
-                throw new \Exception("[" . __METHOD__ . "] " . $errstr . ", errno : " . $errno);
+                throw new \Exception("[" . __METHOD__ . "] " . $errstr, $errno);
             }
         }
         if (Config::$redisConfig['rwtimeout'])
