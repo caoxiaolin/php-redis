@@ -117,7 +117,7 @@ class Redis
 
         $this->_command = $command;
 
-        if ($command == 'PSUBSCRIBE') {
+        if (in_array($command, ['SUBSCRIBE', 'PSUBSCRIBE'])) {
             $this->_callback = array_pop($args);
         }
 
@@ -155,7 +155,7 @@ class Redis
     private function _read()
     {
         //listen & callback
-        if ($this->_command == 'PSUBSCRIBE')
+        if (in_array($this->_command, ['SUBSCRIBE', 'PSUBSCRIBE']))
         {
             while (!feof($this->_socket))
             {
